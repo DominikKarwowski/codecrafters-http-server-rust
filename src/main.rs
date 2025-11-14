@@ -1,4 +1,4 @@
-use std::io::{prelude::*};
+use std::io::{prelude::*, BufReader};
 use std::net::{TcpListener, TcpStream};
 
 fn main() {
@@ -21,38 +21,41 @@ fn main() {
 fn handle_connection(mut stream: TcpStream) {
     println!("accepted new connection");
 
-    let mut request = String::new();
+    let buf_reader = BufReader::new(&stream);
 
-    if let Ok(_) = stream.read_to_string(&mut request) {
-        println!("{request}");
+    let http_request: Vec<_> = buf_reader
+        .lines()
+        .map(|result| result.unwrap())
+        .take_while(|line| !line.is_empty())
+        .collect();
 
-        let response = match parse_request(&request) {
-            HttpResponse::Ok => "HTTP/1.1 200 OK\r\n\r\n",
-            HttpResponse::BadRequest => "HTTP/1.1 404 Not Found\r\n\r\n",
-        };
+    let path = get_request_path(http_request[0].as_str());
 
-        let result = stream.write_all(response.as_bytes());
+    let http_response = match path {
+        "/" => HttpResponse::Ok,
+        _ => HttpResponse::BadRequest,
+    };
 
-        match result {
-            Ok(_) => {
-                println!("response successfully written to TCP stream");
-            }
-            Err(_) => {
-                println!("failed to write response to TCP stream")
-            }
+    let response_status_line = match http_response {
+        HttpResponse::Ok => "HTTP/1.1 200 OK\r\n\r\n",
+        HttpResponse::BadRequest => "HTTP/1.1 404 Not Found\r\n\r\n",
+    };
+
+    let result = stream.write_all(response_status_line.as_bytes());
+
+    match result {
+        Ok(_) => {
+            println!("response successfully written to TCP stream");
+        }
+        Err(e) => {
+            println!("failed to write response to TCP stream: {}", e)
         }
     }
 }
 
-fn parse_request(request: &str) -> HttpResponse {
-    let split: Vec<&str> = request.split_whitespace().collect();
-
-    let request_path = split[1];
-
-    match request_path {
-        "/" => HttpResponse::Ok,
-        _ => HttpResponse::BadRequest,
-    }
+fn get_request_path(request_line: &str) -> &str {
+    let lines: Vec<_> = request_line.split_whitespace().collect();
+    lines[1]
 }
 
 enum HttpResponse {
