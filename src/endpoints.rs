@@ -2,7 +2,7 @@
 
 pub fn handle(request: HttpRequest) -> HttpResponse {
     match request.path.as_str() {
-        s if s.starts_with("/echo") => echo_get(&request),
+        s if s.starts_with("/echo/") => echo_get(&request),
         "/" => index_get(),
         _ => not_found(),
     }
@@ -24,7 +24,7 @@ fn echo_get(request: &HttpRequest) -> HttpResponse {
     let status = HttpResponseStatus::Ok;
     let status_line = get_response_status_line(&status);
 
-    let body = String::from(&request.path[5..]);
+    let body = String::from(&request.path[6..]);
 
     let headers = vec![
         String::from("Content-Type: text/plain"),

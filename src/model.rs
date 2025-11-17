@@ -23,11 +23,8 @@ pub struct HttpRequest {
 impl HttpRequest {
     pub fn serialize(raw_request: Vec<String>) -> HttpRequest {
         let request_line: Vec<_> = raw_request[0].split_whitespace().collect();
-        let headers = raw_request[1]
-            .split_whitespace()
-            .map(str::to_string)
-            .collect();
-        let body = String::clone(&raw_request[2]);
+        let headers = raw_request[1..].to_vec();
+        let body = String::new();
 
         // TODO: handle error scenario with 500
         let method = HttpMethod::from_str(request_line[0]).unwrap();
