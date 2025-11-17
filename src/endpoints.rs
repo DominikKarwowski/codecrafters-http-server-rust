@@ -29,7 +29,8 @@ fn echo_get(request: &HttpRequest) -> HttpResponse {
     let body = String::from(&request.path[6..]);
 
     let headers = HashMap::from([
-        (String::from("Content-Type: text/plain"), format!("Content-Length: {}", body.len())),
+        (String::from("Content-Type"), String::from("text/plain")),
+        (String::from("Content-Length"), format!("{}", body.len())),
     ]);
 
     HttpResponse {
@@ -50,7 +51,8 @@ fn user_agent(request: &HttpRequest) -> HttpResponse {
     };
 
     let headers = HashMap::from([
-        (String::from("Content-Type: text/plain"), format!("Content-Length: {}", body.len())),
+        (String::from("Content-Type"), String::from("text/plain")),
+        (String::from("Content-Length"), format!("{}", body.len())),
     ]);
 
     HttpResponse {
