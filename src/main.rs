@@ -33,11 +33,11 @@ fn handle_connection(mut stream: TcpStream) {
         .take_while(|line| !line.is_empty())
         .collect();
 
-    let http_request = HttpRequest::serialize(raw_request);
+    let http_request = HttpRequest::deserialize(raw_request);
 
     let http_response = endpoints::handle(http_request);
 
-    let result = stream.write_all(http_response.deserialize().as_bytes());
+    let result = stream.write_all(http_response.serialize().as_bytes());
 
     match result {
         Ok(_) => {

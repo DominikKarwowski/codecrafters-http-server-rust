@@ -1,4 +1,6 @@
-﻿pub enum HttpMethod {
+﻿use std::collections::HashMap;
+
+pub enum HttpMethod {
     Get,
     Post,
 }
@@ -16,14 +18,14 @@ impl HttpMethod {
 pub struct HttpRequest {
     pub http_method: HttpMethod,
     pub path: String,
-    pub headers: Vec<String>, // TODO: model as HashMap
+    pub headers: HashMap<String, String>,
     pub body: String,
 }
 
 impl HttpRequest {
-    pub fn serialize(raw_request: Vec<String>) -> HttpRequest {
+    pub fn deserialize(raw_request: Vec<String>) -> HttpRequest {
         let request_line: Vec<_> = raw_request[0].split_whitespace().collect();
-        let headers = raw_request[1..].to_vec();
+        let headers = HttpRequest::parse_headers(&raw_request[1..]);
         let body = String::new();
 
         // TODO: handle error scenario with 500
@@ -37,6 +39,18 @@ impl HttpRequest {
             body,
         }
     }
+
+    fn parse_headers(headers: &[String]) -> HashMap<String, String> {
+        let mut headers_map = HashMap::new();
+
+        for h in headers {
+            let kvp: Vec<&str> = h.split(": ").collect();
+            // TODO: handle error case with malformed headers
+            headers_map.insert(String::from(kvp[0]), String::from(kvp[1]));
+        };
+
+        headers_map
+    }
 }
 
 pub enum HttpResponseStatus {
@@ -47,19 +61,21 @@ pub enum HttpResponseStatus {
 pub struct HttpResponse {
     pub status: HttpResponseStatus,
     pub status_line: String,
-    pub headers: Vec<String>, // TODO: model as HashMap
+    pub headers: HashMap<String, String>,
     pub body: String,
 }
 
 impl HttpResponse {
-    pub fn deserialize(&self) -> String {
+    pub fn serialize(&self) -> String {
         let mut raw_response = String::new();
 
         raw_response.push_str(&self.status_line);
         raw_response.push_str("\r\n");
 
-        for s in &self.headers {
-            raw_response.push_str(s);
+        for (key, value) in &self.headers {
+            raw_response.push_str(key);
+            raw_response.push_str(": ");
+            raw_response.push_str(value);
             raw_response.push_str("\r\n");
         }
         raw_response.push_str("\r\n");
