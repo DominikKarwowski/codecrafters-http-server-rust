@@ -1,5 +1,9 @@
+mod endpoints;
+mod model;
+
 use std::io::{prelude::*, BufReader};
 use std::net::{TcpListener, TcpStream};
+use crate::model::HttpRequest;
 
 fn main() {
     println!("Logs from your program will appear here!");
@@ -23,25 +27,17 @@ fn handle_connection(mut stream: TcpStream) {
 
     let buf_reader = BufReader::new(&stream);
 
-    let http_request: Vec<_> = buf_reader
+    let raw_request: Vec<_> = buf_reader
         .lines()
         .map(|result| result.unwrap())
         .take_while(|line| !line.is_empty())
         .collect();
 
-    let path = get_request_path(http_request[0].as_str());
+    let http_request = HttpRequest::serialize(raw_request);
 
-    let http_response = match path {
-        "/" => HttpResponse::Ok,
-        _ => HttpResponse::BadRequest,
-    };
+    let http_response = endpoints::handle(http_request);
 
-    let response_status_line = match http_response {
-        HttpResponse::Ok => "HTTP/1.1 200 OK\r\n\r\n",
-        HttpResponse::BadRequest => "HTTP/1.1 404 Not Found\r\n\r\n",
-    };
-
-    let result = stream.write_all(response_status_line.as_bytes());
+    let result = stream.write_all(http_response.deserialize().as_bytes());
 
     match result {
         Ok(_) => {
@@ -51,14 +47,4 @@ fn handle_connection(mut stream: TcpStream) {
             println!("failed to write response to TCP stream: {}", e)
         }
     }
-}
-
-fn get_request_path(request_line: &str) -> &str {
-    let lines: Vec<_> = request_line.split_whitespace().collect();
-    lines[1]
-}
-
-enum HttpResponse {
-    Ok,
-    BadRequest,
 }
