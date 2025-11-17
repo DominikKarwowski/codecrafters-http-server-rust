@@ -57,5 +57,5 @@ fn get_response_status_line(http_response: &HttpResponseStatus) -> String {
         HttpResponseStatus::NotFound => "404 Not Found",
     };
 
-    String::from(format!("HTTP/1.1 {response_status}\r\n\r\n"))
+    String::from(format!("HTTP/1.1 {response_status}"))
 }
