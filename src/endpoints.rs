@@ -1,15 +1,15 @@
-﻿use codecrafters_http_server::model::{HttpMethod, HttpRequest, HttpResponse, HttpResponseStatus};
-use std::collections::HashMap;
-use std::error::Error as AnyError;
+﻿use std::collections::HashMap;
 use std::fs::File;
-use std::{fs, io};
-use std::io::{Error, Read};
+use std::io::Read;
 use std::path::PathBuf;
 use std::sync::Arc;
-use futures::AsyncWriteExt;
+use std::{fs, io};
 use codecrafters_http_server::header_keys::{CONTENT_LENGTH, CONTENT_TYPE, USER_AGENT};
 use codecrafters_http_server::media_types::{application, text};
-use crate::ServerSettings;
+use codecrafters_http_server::model::{HttpMethod, HttpRequest, HttpResponse, HttpResponseStatus};
+use codecrafters_http_server::ServerSettings;
+
+type AnyError = Box<dyn std::error::Error>;
 
 pub fn handle(request: HttpRequest, env: Arc<ServerSettings>) -> HttpResponse {
     match request.path.as_str() {
@@ -57,7 +57,7 @@ fn echo_get(request: &HttpRequest) -> HttpResponse {
 
 fn files_get(request: &HttpRequest, env: &ServerSettings) -> HttpResponse {
     let filename = String::from(&request.path[7..]); // move to get()?
-    let file_path = PathBuf::from(&env.directory).join(filename);
+    let file_path = PathBuf::from(&env.root_dir).join(filename);
 
     match read_file(&file_path) {
         Ok(content) => {
@@ -124,7 +124,7 @@ fn user_agent_get(request: &HttpRequest) -> HttpResponse {
 
 fn files_post(request: &HttpRequest, env: &ServerSettings) -> HttpResponse {
     let filename = String::from(&request.path[7..]); // move to get()?
-    let file_path = PathBuf::from(&env.directory).join(filename);
+    let file_path = PathBuf::from(&env.root_dir).join(filename);
 
     // TODO: optional - not in requirements - return 415 UnsupportedMediaType
     if !request.headers.contains_key(CONTENT_TYPE)
@@ -133,7 +133,7 @@ fn files_post(request: &HttpRequest, env: &ServerSettings) -> HttpResponse {
         panic!("Unspecified or unhandled media type")
     }
 
-    match write_file(&file_path, &request.headers[CONTENT_LENGTH], &request.body) {
+    match write_file(&file_path, &request.body) {
         Ok(_) => {
             let status = HttpResponseStatus::Created;
             let status_line = get_response_status_line(&status);
@@ -152,18 +152,8 @@ fn files_post(request: &HttpRequest, env: &ServerSettings) -> HttpResponse {
     }
 }
 
-fn write_file(
-    file_path: &PathBuf,
-    content_len: &str,
-    body: &Vec<u8>,
-) -> Result<(), Box<dyn AnyError>> {
-    // let file_len = content_len.parse()?;
-    //
-    // let mut file = File::create(file_path)?.set_len(file_len)?;
-
+fn write_file(file_path: &PathBuf, body: &Vec<u8>) -> Result<(), AnyError> {
     fs::write(file_path, body)?;
-
-    // let w = file.write_all(body);
 
     Ok(())
 }

@@ -1,77 +1,13 @@
 mod endpoints;
 
-use codecrafters_http_server::model::HttpRequest;
-use codecrafters_http_server::ThreadPool;
+use codecrafters_http_server::{start_http_server, ServerSettings};
 use std::env;
-use std::io::{prelude::*, BufReader};
-use std::net::{TcpListener, TcpStream};
-use std::sync::Arc;
+use std::io::{prelude::*};
 
 fn main() {
     println!("Logs from your program will appear here!");
 
-    let srv_settings = Arc::new(read_settings_or_default());
-    let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
-    let pool = ThreadPool::new(4);
+    let server_settings = ServerSettings::from_env_args(env::args());
 
-    for stream in listener.incoming() {
-        let srv_settings = Arc::clone(&srv_settings);
-
-        match stream {
-            Ok(stream) => {
-                pool.execute(|| {
-                    handle_connection(stream, srv_settings);
-                });
-            }
-            Err(e) => {
-                println!("error: {}", e);
-            }
-        }
-    }
-}
-
-// TODO: all the below is a server part and should live in lib
-fn try_read_settings() -> Option<ServerSettings> {
-    let args: Vec<String> = env::args().collect();
-
-    let directory = if args.get(1)? == "--directory" {
-        args.get(2)?.to_string()
-    } else {
-        return None;
-    };
-
-    Some(ServerSettings { directory })
-}
-
-fn read_settings_or_default() -> ServerSettings {
-    try_read_settings().unwrap_or_else(|| ServerSettings::create_default())
-}
-
-fn handle_connection(mut stream: TcpStream, srv_settings: Arc<ServerSettings>) {
-    println!("accepted new connection");
-
-    let http_request = HttpRequest::from_stream(&stream);
-    let http_response = endpoints::handle(http_request, srv_settings);
-    let result = stream.write_all(&http_response.serialize());
-
-    match result {
-        Ok(_) => {
-            println!("response successfully written to TCP stream");
-        }
-        Err(e) => {
-            println!("failed to write response to TCP stream: {}", e)
-        }
-    }
-}
-
-struct ServerSettings {
-    directory: String,
-}
-
-impl ServerSettings {
-    const fn create_default() -> ServerSettings {
-        ServerSettings {
-            directory: String::new(),
-        }
-    }
+    start_http_server(server_settings, endpoints::handle);
 }

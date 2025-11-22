@@ -1,6 +1,6 @@
 ﻿use crate::header_keys::CONTENT_LENGTH;
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader, Error, Read};
+use std::io::{BufRead, BufReader, Read};
 use std::net::TcpStream;
 
 pub enum HttpMethod {
