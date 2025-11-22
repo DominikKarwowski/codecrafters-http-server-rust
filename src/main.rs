@@ -30,6 +30,7 @@ fn main() {
     }
 }
 
+// TODO: all the below is a server part and should live in lib
 fn try_read_settings() -> Option<ServerSettings> {
     let args: Vec<String> = env::args().collect();
 
@@ -49,18 +50,8 @@ fn read_settings_or_default() -> ServerSettings {
 fn handle_connection(mut stream: TcpStream, srv_settings: Arc<ServerSettings>) {
     println!("accepted new connection");
 
-    let buf_reader = BufReader::new(&stream);
-
-    let raw_request: Vec<_> = buf_reader
-        .lines()
-        .map(|result| result.unwrap())
-        .take_while(|line| !line.is_empty())
-        .collect();
-
-    let http_request = HttpRequest::deserialize(raw_request);
-
+    let http_request = HttpRequest::from_stream(&stream);
     let http_response = endpoints::handle(http_request, srv_settings);
-
     let result = stream.write_all(&http_response.serialize());
 
     match result {

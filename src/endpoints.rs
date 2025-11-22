@@ -24,7 +24,6 @@ pub fn handle(request: HttpRequest, env: Arc<ServerSettings>) -> HttpResponse {
     }
 }
 
-
 fn index_get() -> HttpResponse {
     let status = HttpResponseStatus::Ok;
     let status_line = get_response_status_line(&status);
@@ -158,9 +157,9 @@ fn write_file(
     content_len: &str,
     body: &Vec<u8>,
 ) -> Result<(), Box<dyn AnyError>> {
-    let file_len = content_len.parse()?;
-
-    let mut file = File::create(file_path)?.set_len(file_len)?;
+    // let file_len = content_len.parse()?;
+    //
+    // let mut file = File::create(file_path)?.set_len(file_len)?;
 
     fs::write(file_path, body)?;
 
