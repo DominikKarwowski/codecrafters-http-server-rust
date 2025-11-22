@@ -1,7 +1,6 @@
 mod endpoints;
-mod model;
 
-use crate::model::HttpRequest;
+use codecrafters_http_server::model::HttpRequest;
 use codecrafters_http_server::ThreadPool;
 use std::env;
 use std::io::{prelude::*, BufReader};
@@ -85,4 +84,3 @@ impl ServerSettings {
         }
     }
 }
-

@@ -1,4 +1,8 @@
-﻿use std::sync::{mpsc, Arc, Mutex};
+﻿pub mod media_types;
+pub mod header_keys;
+pub mod model;
+
+use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
 struct Worker {

@@ -9,4 +9,4 @@ rust-version = "1.80"
 anyhow = "1.0.68"                                # error handling
 bytes = "1.3.0"                                  # helps manage buffers
 thiserror = "1.0.38"
-futures = { version = "0.3.31", features = ["thread-pool"] }                             # error handling
+futures = { version = "0.3.31", features = ["thread-pool"] }

@@ -19,16 +19,16 @@ pub struct HttpRequest {
     pub http_method: HttpMethod,
     pub path: String,
     pub headers: HashMap<String, String>,
-    pub body: String,
+    pub body: Vec<u8>,
 }
 
 impl HttpRequest {
     pub fn deserialize(raw_request: Vec<String>) -> HttpRequest {
         let request_line: Vec<_> = raw_request[0].split_whitespace().collect();
         let headers = HttpRequest::parse_headers(&raw_request[1..]);
-        let body = String::new();
+        let body = Vec::new();
 
-        // TODO: handle error scenario with 500
+        // TODO: optional - not in requirements - handle error scenario with 500
         let method = HttpMethod::from_str(request_line[0]).unwrap();
         let path = String::from(request_line[1]);
 
@@ -55,6 +55,7 @@ impl HttpRequest {
 
 pub enum HttpResponseStatus {
     Ok,
+    Created,
     NotFound,
 }
 
