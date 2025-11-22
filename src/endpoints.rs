@@ -1,17 +1,17 @@
-﻿use std::collections::HashMap;
+﻿use codecrafters_http_server::header_keys::{CONTENT_TYPE, USER_AGENT};
+use codecrafters_http_server::http_response::HttpResponseContent;
+use codecrafters_http_server::media_types::{application, text};
+use codecrafters_http_server::model::{HttpMethod, HttpRequest, HttpResponse};
+use codecrafters_http_server::{http_response, ServerSettings};
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::{fs, io};
-use codecrafters_http_server::header_keys::{CONTENT_LENGTH, CONTENT_TYPE, USER_AGENT};
-use codecrafters_http_server::media_types::{application, text};
-use codecrafters_http_server::model::{HttpMethod, HttpRequest, HttpResponse, HttpResponseStatus};
-use codecrafters_http_server::ServerSettings;
 
 type AnyError = Box<dyn std::error::Error>;
 
-pub fn handle(request: HttpRequest, env: Arc<ServerSettings>) -> HttpResponse {
+pub fn handler(request: HttpRequest, env: Arc<ServerSettings>) -> HttpResponse {
     match request.path.as_str() {
         s if s.starts_with("/echo/") => echo_get(&request),
         s if s.starts_with("/files/") => match request.http_method {
@@ -25,69 +25,31 @@ pub fn handle(request: HttpRequest, env: Arc<ServerSettings>) -> HttpResponse {
 }
 
 fn index_get() -> HttpResponse {
-    let status = HttpResponseStatus::Ok;
-    let status_line = get_response_status_line(&status);
-
-    HttpResponse {
-        status,
-        status_line,
-        headers: HashMap::new(),
-        body: Vec::new(),
-    }
+    http_response::ok(None)
 }
 
 fn echo_get(request: &HttpRequest) -> HttpResponse {
-    let status = HttpResponseStatus::Ok;
-    let status_line = get_response_status_line(&status);
-
     let body = request.path[6..].as_bytes().to_vec();
 
-    let headers = HashMap::from([
-        (String::from(CONTENT_TYPE), String::from(text::PLAIN)),
-        (String::from(CONTENT_LENGTH), format!("{}", body.len())),
-    ]);
-
-    HttpResponse {
-        status,
-        status_line,
-        headers,
+    http_response::ok(Some(HttpResponseContent {
         body,
-    }
+        media_type: text::PLAIN,
+    }))
 }
 
 fn files_get(request: &HttpRequest, env: &ServerSettings) -> HttpResponse {
-    let filename = String::from(&request.path[7..]); // move to get()?
+    let filename = String::from(&request.path[7..]);
     let file_path = PathBuf::from(&env.root_dir).join(filename);
 
     match read_file(&file_path) {
-        Ok(content) => {
-            let status = HttpResponseStatus::Ok;
-            let status_line = get_response_status_line(&status);
-            let headers = HashMap::from([
-                (
-                    String::from(CONTENT_TYPE),
-                    String::from(application::OCTET_STREAM),
-                ),
-                (String::from(CONTENT_LENGTH), format!("{}", content.len())),
-            ]);
-            let body = content;
-            HttpResponse {
-                status,
-                status_line,
-                headers,
+        Ok(body) => {
+            http_response::ok(Some(HttpResponseContent{
                 body,
-            }
+                media_type: application::OCTET_STREAM,
+            }))
         }
         Err(_) => {
-            let status = HttpResponseStatus::NotFound;
-            let status_line = get_response_status_line(&status);
-
-            HttpResponse {
-                status,
-                status_line,
-                headers: HashMap::new(),
-                body: Vec::new(),
-            }
+            http_response::not_found()
         }
     }
 }
@@ -101,29 +63,19 @@ fn read_file(path: &PathBuf) -> Result<Vec<u8>, io::Error> {
 }
 
 fn user_agent_get(request: &HttpRequest) -> HttpResponse {
-    let status = HttpResponseStatus::Ok;
-    let status_line = get_response_status_line(&status);
-
     let body = match request.headers.get(USER_AGENT) {
         Some(v) => v.as_bytes().to_vec(),
         None => Vec::new(),
     };
 
-    let headers = HashMap::from([
-        (String::from(CONTENT_TYPE), String::from("text/plain")),
-        (String::from(CONTENT_LENGTH), format!("{}", body.len())),
-    ]);
-
-    HttpResponse {
-        status,
-        status_line,
-        headers,
+    http_response::ok(Some(HttpResponseContent{
         body,
-    }
+        media_type: text::PLAIN,
+    }))
 }
 
 fn files_post(request: &HttpRequest, env: &ServerSettings) -> HttpResponse {
-    let filename = String::from(&request.path[7..]); // move to get()?
+    let filename = String::from(&request.path[7..]);
     let file_path = PathBuf::from(&env.root_dir).join(filename);
 
     // TODO: optional - not in requirements - return 415 UnsupportedMediaType
@@ -135,15 +87,7 @@ fn files_post(request: &HttpRequest, env: &ServerSettings) -> HttpResponse {
 
     match write_file(&file_path, &request.body) {
         Ok(_) => {
-            let status = HttpResponseStatus::Created;
-            let status_line = get_response_status_line(&status);
-
-            HttpResponse {
-                status,
-                status_line,
-                headers: HashMap::new(),
-                body: Vec::new(),
-            }
+            http_response::created()
         }
         Err(e) => {
             // TODO: optional - not in requirements - return 500 InternalServerError
@@ -154,28 +98,9 @@ fn files_post(request: &HttpRequest, env: &ServerSettings) -> HttpResponse {
 
 fn write_file(file_path: &PathBuf, body: &Vec<u8>) -> Result<(), AnyError> {
     fs::write(file_path, body)?;
-
     Ok(())
 }
 
 fn not_found() -> HttpResponse {
-    let status = HttpResponseStatus::NotFound;
-    let status_line = get_response_status_line(&status);
-
-    HttpResponse {
-        status,
-        status_line,
-        headers: HashMap::new(),
-        body: Vec::new(),
-    }
-}
-
-fn get_response_status_line(http_response: &HttpResponseStatus) -> String {
-    let response_status = match http_response {
-        HttpResponseStatus::Ok => "200 OK",
-        HttpResponseStatus::Created => "201 Created",
-        HttpResponseStatus::NotFound => "404 Not Found",
-    };
-
-    format!("HTTP/1.1 {response_status}")
+    http_response::not_found()
 }

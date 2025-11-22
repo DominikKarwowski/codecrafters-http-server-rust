@@ -1,6 +1,7 @@
 ﻿pub mod header_keys;
 pub mod media_types;
 pub mod model;
+pub mod http_response;
 
 use crate::model::{HttpRequest, HttpResponse};
 use std::env::Args;
