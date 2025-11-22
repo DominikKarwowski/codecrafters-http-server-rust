@@ -62,25 +62,25 @@ pub struct HttpResponse {
     pub status: HttpResponseStatus,
     pub status_line: String,
     pub headers: HashMap<String, String>,
-    pub body: String,
+    pub body: Vec<u8>,
 }
 
 impl HttpResponse {
-    pub fn serialize(&self) -> String {
-        let mut raw_response = String::new();
+    pub fn serialize(&self) -> Vec<u8> {
+        let mut raw_response = Vec::new();
 
-        raw_response.push_str(&self.status_line);
-        raw_response.push_str("\r\n");
+        raw_response.extend_from_slice(self.status_line.as_bytes());
+        raw_response.extend_from_slice("\r\n".as_bytes());
 
         for (key, value) in &self.headers {
-            raw_response.push_str(key);
-            raw_response.push_str(": ");
-            raw_response.push_str(value);
-            raw_response.push_str("\r\n");
+            raw_response.extend_from_slice(key.as_bytes());
+            raw_response.extend_from_slice(": ".as_bytes());
+            raw_response.extend_from_slice(value.as_bytes());
+            raw_response.extend_from_slice("\r\n".as_bytes());
         }
-        raw_response.push_str("\r\n");
+        raw_response.extend_from_slice("\r\n".as_bytes());
 
-        raw_response.push_str(&self.body);
+        raw_response.extend_from_slice(&self.body);
 
         raw_response
     }
