@@ -64,7 +64,7 @@ pub struct ServerSettings {
 
 impl ServerSettings {
     pub fn get_addr(&self) -> String {
-        format!("{}.{}", self.host_addr, self.port)
+        format!("{}:{}", self.host_addr, self.port)
     }
 
     pub fn from_env_args(args: Args) -> ServerSettings {
